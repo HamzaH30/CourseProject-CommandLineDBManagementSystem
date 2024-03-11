@@ -19,5 +19,11 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         public int StadiumId { get; set; }
         public int HomeTeamId { get; set; }
         public int AwayTeamId { get; set; }
+
+        // Navigation Properties
+        public Stadium Stadium { get; set; }
+        public virtual ICollection<Goal> Goals { get; set; }
+        public virtual Team HomeTeam { get; set; }
+        public virtual Team AwayTeam { get; set; }
     }
 }

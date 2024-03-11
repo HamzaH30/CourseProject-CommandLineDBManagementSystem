@@ -32,6 +32,108 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            DefinePrivateKeys(modelBuilder);
+            DefineRelationships(modelBuilder);
+        }
+
+        private static void DefineRelationships(ModelBuilder modelBuilder)
+        {
+            // Player (many) -> Team (one)
+            modelBuilder.Entity<Player>()
+                .HasOne(player => player.Team)
+                .WithMany(team => team.Players)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // LeagueTeam (many) -> Team (one)
+            modelBuilder.Entity<LeagueTeam>()
+                .HasOne(leagueTeam => leagueTeam.Team)
+                .WithMany(team => team.LeagueTeams)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // LeagueTeam (many) -> League (one)
+            modelBuilder.Entity<LeagueTeam>()
+                .HasOne(leagueTeam => leagueTeam.League)
+                .WithMany(league => league.LeagueTeams)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Manager (one) -> Team (one)
+            modelBuilder.Entity<Manager>()
+                .HasOne(manager => manager.Team)
+                .WithOne(team => team.Manager)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // TeamStadium (one) -> Team (one)
+            modelBuilder.Entity<TeamStadium>()
+                .HasOne(teamStadium => teamStadium.Team)
+                .WithOne(team => team.TeamStadium)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // TeamStadium (many) -> Stadium (one)
+            modelBuilder.Entity<TeamStadium>()
+                .HasOne(teamStadium => teamStadium.Stadium)
+                .WithMany(stadium => stadium.TeamStadiums)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Match (many) -> Stadium (one)
+            /*
+             * The Database logic: If stadium is deleted, then the match is deleted
+             * 
+             * ***TODO***: The Business Logic: The stadium cannot be deleted, but instead, a property (i.e., "demolished" or "active") should be set to true
+             */
+            modelBuilder.Entity<Match>()
+                .HasOne(match => match.Stadium)
+                .WithMany(stadium => stadium.Matches)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Goal (many) -> Match (one)
+            modelBuilder.Entity<Goal>()
+                .HasOne(goal => goal.Match)
+                .WithMany(match => match.Goals)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 2 foreign key relationships for Match (many) -> Team (one)
+            /*
+             * Set IsRequired to false & DeleteBehaviour to NoAction,
+             * becase when dealing with relationships involving 2 foreign keys from a single entity,
+             * in order to prevent an error related to "cycle".
+             */
+            modelBuilder.Entity<Match>()
+                .HasOne(match => match.HomeTeam)
+                .WithMany(homeTeam => homeTeam.Matches)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Match>()
+                .HasOne(match => match.AwayTeam)
+                .WithMany(awayTeam => awayTeam.Matches)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Goal (many) -> Player (one)
+            modelBuilder.Entity<Goal>()
+                .HasOne(goal => goal.Player)
+                .WithMany(player => player.Goals)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Player (many) -> Position (one)
+            modelBuilder.Entity<Player>()
+                .HasOne(player => player.Position)
+                .WithMany(pos => pos.Players)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+        }
+
+        private static void DefinePrivateKeys(ModelBuilder modelBuilder)
+        {
             // Using Fluent API
 
             // Primary Key: Goal
@@ -72,7 +174,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
 
             // Primary Key: TeamStadium
             modelBuilder.Entity<TeamStadium>()
-                .HasKey(teamStadium => new {teamStadium.StadiumId, teamStadium.TeamId });
+                .HasKey(teamStadium => new { teamStadium.StadiumId, teamStadium.TeamId });
         }
     }
 }

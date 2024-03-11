@@ -11,5 +11,8 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         // Self Properties
         public int Id { get; set; }
         public string Name { get; set; }
+
+        // Navigation properties
+        public virtual ICollection<Player> Players { get; set; }
     }
 }

@@ -14,5 +14,9 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         public int Capactiy { get; set; }
         public string City { get; set; }
         public string Country { get; set; }
+
+        // Navigation Properties
+        public virtual ICollection<TeamStadium> TeamStadiums { get; set; }
+        public virtual ICollection<Match> Matches { get; set; }
     }
 }

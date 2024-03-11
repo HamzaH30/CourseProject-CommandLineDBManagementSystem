@@ -19,5 +19,10 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         // Foreign Properties
         public int TeamId { get; set; }
         public int PositionId { get; set; }
+
+        // Navigation Properties
+        public virtual Team Team { get; set; }
+        public virtual ICollection<Goal> Goals { get; set; }
+        public virtual Position Position { get; set; }
     }
 }

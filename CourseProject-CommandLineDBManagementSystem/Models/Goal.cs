@@ -15,5 +15,9 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         // Foreign Properties
         public int PlayerId { get; set; }
         public int MatchId { get; set; }
+
+        // Navigation properties
+        public virtual Match Match { get; set; }
+        public virtual Player Player { get; set; }
     }
 }
