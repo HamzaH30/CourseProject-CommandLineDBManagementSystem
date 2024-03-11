@@ -164,6 +164,10 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
             modelBuilder.Entity<Position>()
                 .HasKey(position => position.Id);
 
+            // Alternate Key: Position
+            modelBuilder.Entity<Position>()
+                .HasAlternateKey(position => position.Name);
+
             // Primary Key: Stadium
             modelBuilder.Entity<Stadium>()
                 .HasKey(stadium => stadium.Id);
