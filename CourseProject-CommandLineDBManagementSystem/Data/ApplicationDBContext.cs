@@ -107,13 +107,13 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
              */
             modelBuilder.Entity<Match>()
                 .HasOne(match => match.HomeTeam)
-                .WithMany(homeTeam => homeTeam.Matches)
+                .WithMany(homeTeam => homeTeam.HomeMatches)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Match>()
                 .HasOne(match => match.AwayTeam)
-                .WithMany(awayTeam => awayTeam.Matches)
+                .WithMany(awayTeam => awayTeam.AwayMatches)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
 

@@ -17,6 +17,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
         public virtual ICollection<LeagueTeam> LeagueTeams { get; set; }
         public virtual Manager Manager { get; set; }
         public virtual TeamStadium TeamStadium { get; set; }
-        public virtual ICollection<Match> Matches { get; set; }
+        public virtual ICollection<Match> HomeMatches { get; set; }
+        public virtual ICollection<Match> AwayMatches { get; set; }
     }
 }
