@@ -32,7 +32,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            DefinePrivateKeys(modelBuilder);
+            DefineKeys(modelBuilder);
             DefineRelationships(modelBuilder);
         }
 
@@ -132,7 +132,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
                 .OnDelete(DeleteBehavior.NoAction);
         }
 
-        private static void DefinePrivateKeys(ModelBuilder modelBuilder)
+        private static void DefineKeys(ModelBuilder modelBuilder)
         {
             // Using Fluent API
 
