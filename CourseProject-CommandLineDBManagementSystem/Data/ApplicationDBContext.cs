@@ -178,7 +178,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
 
             // Primary Key: TeamStadium
             modelBuilder.Entity<TeamStadium>()
-                .HasKey(teamStadium => new { teamStadium.StadiumId, teamStadium.TeamId });
+                .HasKey(teamStadium => teamStadium.Id);
         }
     }
 }

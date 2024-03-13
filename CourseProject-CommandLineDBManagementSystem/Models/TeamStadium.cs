@@ -11,7 +11,10 @@ namespace CourseProject_CommandLineDBManagementSystem.Models
     /// </summary>
     internal class TeamStadium
     {
-        // Self & Foreign Properties
+        // Self Properties
+        public int Id { get; set; }
+
+        // Foreign Properties
         public int TeamId { get; set; }
         public int StadiumId { get; set; }
 
