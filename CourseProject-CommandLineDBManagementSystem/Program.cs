@@ -20,24 +20,9 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             while (continueRunning)
             {
-                Menu startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
-                
-                CreateEntry createEntry = new CreateEntry(startingMenu);
-                ReadOption readOption = new ReadOption(startingMenu);
-                
-                startingMenu.AddToMenu(createEntry);
-                startingMenu.AddToMenu(readOption);
-
+                InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption);
                 startingMenu.Display();
-
-                if (createEntry.ContinueToCreateEntryMenu)
-                {
-                    CreateOperation<ApplicationDBContext>();
-                }
-                else if (readOption.ContinueToReadMenu)
-                {
-                    ReadOperation<ApplicationDBContext>();
-                }
+                HandleStartingMenuOptions(createEntry, readOption);
 
                 // Check if user requested to exit through the menu
                 if (startingMenu.UserRequestedExit)
@@ -46,17 +31,38 @@ namespace CourseProject_CommandLineDBManagementSystem
                 }
                 else
                 {
-                    // Ask the user if they want to perform another operation, as before
-                    Console.Write("Do you want to perform another operation? (y/n): ");
-                    string userDecision = Console.ReadLine();
-
-                    if (userDecision != null && userDecision.ToLower() != "y")
-                    {
-                        continueRunning = false;
-                    }
-                    Console.WriteLine();
+                    continueRunning = AskToContinue();
                 }
             }
+        }
+
+        private static void HandleStartingMenuOptions(CreateEntry createEntry, ReadOption readOption)
+        {
+            if (createEntry.ContinueToCreateEntryMenu)
+            {
+                CreateOperation<ApplicationDBContext>();
+            }
+            else if (readOption.ContinueToReadMenu)
+            {
+                ReadOperation<ApplicationDBContext>();
+            }
+        }
+
+        private static void InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption)
+        {
+            startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
+            createEntry = new CreateEntry(startingMenu);
+            readOption = new ReadOption(startingMenu);
+            startingMenu.AddToMenu(createEntry);
+            startingMenu.AddToMenu(readOption);
+        }
+
+        private static bool AskToContinue()
+        {
+            // Ask the user if they want to perform another operation, as before
+            Console.Write("Do you want to perform another operation? (y/n): ");
+            var userDecision = Console.ReadLine()?.ToLower();
+            return userDecision == "y";
         }
 
         /// <summary>
