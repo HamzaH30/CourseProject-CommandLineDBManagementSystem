@@ -1,4 +1,10 @@
-﻿using CourseProject_CommandLineDBManagementSystem.Data;
+﻿/*
+ * Name: Hamza Haque
+ * Course: Advanced Database and ORM Concepts
+ * Assignment: Advanced Database Course Project: Command Line Database Management System
+ */
+
+using CourseProject_CommandLineDBManagementSystem.Data;
 using CourseProject_CommandLineDBManagementSystem.MenuOptions;
 using MenuClasses;
 using Microsoft.Data.SqlClient;
@@ -13,6 +19,15 @@ namespace CourseProject_CommandLineDBManagementSystem
 {
     internal class Program
     {
+        /*
+         * TODO:
+         * - Create a separate file that creates some temporary starting data, instead of having to manually create data
+         * - Finish the Update & Delete operations
+         * - Complete README + documentation
+         * - Format output (bonus)
+         * - get Alex and/or Pouya to look over, if possible
+         */
+
         static void Main(string[] args)
         {
             using ApplicationDBContext dbContext = new ApplicationDBContext();
@@ -212,7 +227,7 @@ namespace CourseProject_CommandLineDBManagementSystem
              * Find the entity type that corresponds to the provided table name. Referenced from: https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
              * (Entity types are classes mapped to the database tables)
              */
-            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
+var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
 
             // If the entity type isn't found, it prints an error message and returns early.
             if (entityType == null)
