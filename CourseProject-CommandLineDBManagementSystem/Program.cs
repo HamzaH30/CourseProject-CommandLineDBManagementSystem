@@ -10,10 +10,12 @@ using MenuClasses;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Collections;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace CourseProject_CommandLineDBManagementSystem
 {
@@ -24,7 +26,6 @@ namespace CourseProject_CommandLineDBManagementSystem
          * - Create a separate file that creates some temporary starting data, instead of having to manually create data
          * - Finish the Update & Delete operations
          * - Complete README + documentation
-         * - Format output (bonus)
          * - get Alex and/or Pouya to look over, if possible
          */
 
@@ -104,7 +105,6 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             return readableName.ToString();
         }
-
 
         private static void ReadOperation<TContext>() where TContext : ApplicationDBContext, new()
         {
@@ -219,15 +219,26 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
         }
 
+        /// <summary>
+        /// This function is used as a callback function.
+        /// 
+        /// First, given the name of the table that the user wants to view, it finds the corresponding entity type (class).
+        /// 
+        /// Secondly, it will find the corresponding DbSet property (e.g, DbSet<Goal>, DbSet<Team>, etc.) that stores a collection
+        /// of all the entries (entities) in this table
+        /// 
+        /// Finally, it will print out the entries in a readable format.
+        /// </summary>
+        /// <param name="entityName"></param>
         public static void ReadTableEntry(string entityName)
         {
             using var dbContext = new ApplicationDBContext();
 
             /*
-             * Find the entity type that corresponds to the provided table name. Referenced from: https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
+             * Step 1: Find the corresponding entity type for the given name. Referenced from: https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
              * (Entity types are classes mapped to the database tables)
              */
-var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
 
             // If the entity type isn't found, it prints an error message and returns early.
             if (entityType == null)
@@ -237,7 +248,7 @@ var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => e
             }
 
             /*
-             * Find the DbSet property (DbSet<entityType>) within the DbContext that corresponds to the entity name.
+             * Step 2A: Find the DbSet property (DbSet<entityType>) within the DbContext that corresponds to the entity name.
              * 
              * Referenced from https://dev.to/nakullukan/how-to-crud-dynamically-in-entity-framework-3fi3
              */
@@ -250,15 +261,40 @@ var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => e
                 return;
             }
 
-            // Retrieves the value of the DbSet property, which is an IQueryable representing the collection of entities in the database.
+            // Step 2B: Retrieve the value of the DbSet property, which is an IQueryable representing the collection of entities in the database.
             IEnumerable dbSet = (IEnumerable)dbSetProperty.GetValue(dbContext);
 
+
+            // Step 3: Print the entries in a readable format.
+            Console.WriteLine($"\n\rEntries in {ToReadableName(entityName)}: ");
+            PrintTableEntries(entityType, dbSet);
+        }
+
+        /// <summary>
+        /// This function is responsible for printing out the entries of a table  in the database in a readable, printable table.
+        /// 
+        /// Firstly, it determines the maximum width of each column.
+        /// Then, it prints the header and data rows.
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <param name="dbSet"></param>
+        private static void PrintTableEntries(IEntityType? entityType, IEnumerable dbSet)
+        {
             // Retrieve a list of navigation property names to filter them out later
             List<string> navigationProperties = entityType.GetNavigations().Select(navigation => navigation.Name).ToList();
 
-            Console.WriteLine($"\n\rEntries in {ToReadableName(entityName)}: ");
+            // Determine the maximum width for each column (looking at the headers and cells)
+            Dictionary<string, int> maxColumnWidths = DetermineMaxColWidth(entityType, dbSet, navigationProperties);
 
-            // Iterates over each entity in the DbSet property
+            // Print header row
+            int colGap = PrintHeader(maxColumnWidths);
+
+            // Print the data rows
+            PrintDataRows(dbSet, navigationProperties, maxColumnWidths, colGap);
+        }
+
+        private static void PrintDataRows(IEnumerable dbSet, List<string> navigationProperties, Dictionary<string, int> maxColumnWidths, int colGap)
+        {
             foreach (var entity in dbSet)
             {
                 // Retrieves the properties of the current entity (the properties in the corresponding class, e.g. Team or Stadium)
@@ -270,11 +306,83 @@ var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => e
                     if (!navigationProperties.Contains(prop.Name))
                     {
                         var propValue = prop.GetValue(entity);
-                        Console.WriteLine($"{ToReadableName(prop.Name)}: {propValue}");
+
+                        // Print each value, padded to the right to align with the column width
+                        Console.Write($"{propValue.ToString().PadRight(maxColumnWidths[prop.Name] + colGap)}|");
                     }
                 }
-                Console.WriteLine("-----------");
+
+                // New line after printing each entity's data
+                Console.WriteLine();
             }
+        }
+
+        private static int PrintHeader(Dictionary<string, int> maxColumnWidths)
+        {
+            int colGap = 2;
+
+            // Secondly, print the header row
+            foreach (string columnName in maxColumnWidths.Keys)
+            {
+                // Add padding for readability, creating a small gap between columns.
+                Console.Write($"{ToReadableName(columnName).PadRight(maxColumnWidths[columnName] + colGap)}|");
+            }
+
+            // New line after printing the header
+            Console.WriteLine();
+
+            // Print a divider
+            foreach (int width in maxColumnWidths.Values)
+            {
+                Console.Write($"{new string('-', width + colGap)}+");
+            }
+
+            // New line after printing the divider
+            Console.WriteLine();
+            return colGap;
+        }
+
+        private static Dictionary<string, int> DetermineMaxColWidth(IEntityType? entityType, IEnumerable dbSet, List<string> navigationProperties)
+        {
+            // Dictionary to hold the maximum length of values for each property
+            Dictionary<string, int> maxColumnWidths = new Dictionary<string, int>();
+
+            // Including the headers in the width calculation
+            foreach (var prop in entityType.ClrType.GetProperties())
+            {
+                if (!navigationProperties.Contains(prop.Name))
+                {
+                    // Initialize each column width with the length of the property name (header name)
+                    maxColumnWidths[prop.Name] = ToReadableName(prop.Name).Length;
+                }
+            }
+
+            // Iterate over each entity to find the maximum length of values for each property
+            foreach (var entity in dbSet)
+            {
+                /* Note:
+                 * entity.GetType().GetProperties() and entityType.ClrType.GetProperties() virtually do the same thing.
+                 * 
+                 * The first way is a .NET specific approach, and can be used on any object.
+                 * The second way is an EF core specific approach, and can only be used (the ClrType) within the context of the EF core model
+                 */
+                foreach (var prop in entity.GetType().GetProperties())
+                {
+                    if (!navigationProperties.Contains(prop.Name))
+                    {
+                        var propValue = prop.GetValue(entity);
+                        int valueLength = propValue.ToString().Length;
+
+                        if (valueLength > maxColumnWidths[prop.Name])
+                        {
+                            // Update if the current value is longer
+                            maxColumnWidths[prop.Name] = valueLength;
+                        }
+                    }
+                }
+            }
+
+            return maxColumnWidths;
         }
 
         /// <summary>
