@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MenuClasses
 {
@@ -11,14 +8,16 @@ namespace MenuClasses
         private List<IMenuItem> _menuItems = new();
         private string _welcomeText { get; init; }
         public string Prompt { get; init; }
-
         public bool IsMenuCurrentlyBeingUsed { get; set; }
+        public bool UserRequestedExit { get; private set; }
+
 
         public Menu(string welcomeText, string prompt)
         {
             IsMenuCurrentlyBeingUsed = true;
             _welcomeText = welcomeText;
             Prompt = prompt;
+            UserRequestedExit = false;
 
             // Adding an exit menu option
             _menuItems.Add(new Exit("Exit Menu", this));
@@ -45,25 +44,27 @@ namespace MenuClasses
                 Console.WriteLine($"{_menuItems.Count}: {_menuItems.First().SelectionText}");
 
                 Console.Write("Option: ");
-                HandleUserInput(Console.ReadLine());
+                string userInput = Console.ReadLine();
+                HandleUserInput(userInput);
             }
         }
 
         public void HandleUserInput(string input)
         {
-            if (int.TryParse(input, out int inputInt))
+            if (int.TryParse(input, out int inputInt) && inputInt > 0 && inputInt <= _menuItems.Count)
             {
                 if (inputInt == _menuItems.Count)
                 {
                     // User wants to exit the menu
                     inputInt = 0;
+                    UserRequestedExit = true;
                 }
 
                 SelectMenuElement(_menuItems[inputInt]);
             }
             else
             {
-                throw new Exception("Please enter a number");
+                Console.WriteLine("Invalid input. Please enter a number corresponding to the menu options.");
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using CourseProject_CommandLineDBManagementSystem.Data;
 using CourseProject_CommandLineDBManagementSystem.MenuOptions;
 using MenuClasses;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Net.NetworkInformation;
@@ -13,19 +14,38 @@ namespace CourseProject_CommandLineDBManagementSystem
         static void Main(string[] args)
         {
             using ApplicationDBContext dbContext = new ApplicationDBContext();
+            bool continueRunning = true;
 
-
-
-            Menu startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
-            CreateEntry createEntry = new CreateEntry(startingMenu);
-            startingMenu.AddToMenu(createEntry);
-            startingMenu.Display();
-
-            if (createEntry.ContinueToCreateEntryMenu)
+            while (continueRunning)
             {
-                CreateOperation<ApplicationDBContext>();
-            }
+                Menu startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
+                CreateEntry createEntry = new CreateEntry(startingMenu);
+                startingMenu.AddToMenu(createEntry);
+                startingMenu.Display();
 
+                if (createEntry.ContinueToCreateEntryMenu)
+                {
+                    CreateOperation<ApplicationDBContext>();
+                }
+
+                // Check if user requested to exit through the menu
+                if (startingMenu.UserRequestedExit)
+                {
+                    continueRunning = false;
+                }
+                else
+                {
+                    // Ask the user if they want to perform another operation, as before
+                    Console.Write("Do you want to perform another operation? (y/n): ");
+                    string userDecision = Console.ReadLine();
+
+                    if (userDecision != null && userDecision.ToLower() != "y")
+                    {
+                        continueRunning = false;
+                    }
+                    Console.WriteLine();
+                }
+            }
         }
 
         private static void CreateOperation<TContext>() where TContext : ApplicationDBContext, new()
@@ -88,7 +108,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                     else 
                     {
                         // Prompt user
-                        Console.WriteLine($"Enter value for {prop.Name} ({prop.PropertyType.Name}): ");
+                        Console.Write($"Enter value for {prop.Name} ({prop.PropertyType.Name}): ");
                         string input = Console.ReadLine();
 
                         // Convert the user's input into the correct datatype for this property
@@ -100,13 +120,55 @@ namespace CourseProject_CommandLineDBManagementSystem
                 }
             }
 
-            // Once the user has entered in all the required information, add the entity instance to the DbSet and save changes
-            dbContext.Add(entityInstance);
-            dbContext.SaveChanges();
-
-            Console.WriteLine("Entity added successfully.");
+            try
+            {
+                // Once the user has entered in all the required information, add the entity instance to the DbSet and save changes
+                dbContext.Add(entityInstance);
+                dbContext.SaveChanges();
+                Console.WriteLine("----\r\nThe record was inserted into the database.");
+            }
+            catch (DbUpdateException ex)
+            {
+                // Check if the exception is due to a duplicate key
+                if (IsDuplicateKeyException(ex))
+                {
+                    Console.WriteLine("Error: A record with the same key already exists in the database.");
+                }
+                else
+                {
+                    // Handle or log other database update exceptions
+                    Console.WriteLine("An error occurred while updating the database. Please try again.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                Console.WriteLine("An unexpected error occurred.");
+            }
         }
 
+        /// <summary>
+        /// Referenced from: https://stackoverflow.com/questions/3967140/duplicate-key-exception-from-entity-framework
+        /// </summary>
+        private static bool IsDuplicateKeyException(DbUpdateException exception)
+        {
+            // Check if the InnerException exists and is of type SqlException
+            if (exception.InnerException != null && exception.InnerException.GetType() == typeof(SqlException))
+            {
+                // Explicitly cast the InnerException to a SqlException
+                SqlException sqlEx = (SqlException)exception.InnerException;
+
+                // 2627 is 'Unique constraint violation', 2601 is 'Cannot insert duplicate key row'
+                return sqlEx.Number == 2627 || sqlEx.Number == 2601;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// This is a specific method for when the user wants to write an entry into the Goal table.
+        /// It prompts the user specific information regarding the time of the goal.
+        /// </summary>
         private static TimeSpan PromptUserForGoalTime()
         {
             int minutes = 0;
@@ -143,7 +205,6 @@ namespace CourseProject_CommandLineDBManagementSystem
             // Combine into a TimeSpan and return
             return new TimeSpan(0, minutes, seconds);
         }
-
 
         /// <summary>
         /// Check if the property is a value type or string, and not part of the primary key
