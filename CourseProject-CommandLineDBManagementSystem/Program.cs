@@ -321,7 +321,7 @@ namespace CourseProject_CommandLineDBManagementSystem
         {
             int colGap = 2;
 
-            // Secondly, print the header row
+            // Print the header row
             foreach (string columnName in maxColumnWidths.Keys)
             {
                 // Add padding for readability, creating a small gap between columns.
@@ -342,6 +342,14 @@ namespace CourseProject_CommandLineDBManagementSystem
             return colGap;
         }
 
+        /// <summary>
+        /// This function calculates the maximum column widths for a table display by considering both 
+        /// the property names (headers) and their values across all entities, excluding navigation properties. 
+        /// 
+        /// It initializes each column width based on the property name length and then updates these widths based on the 
+        /// longest value found for each property in the dataset, 
+        /// returning a dictionary mapping property names to their maximum widths.
+        /// </summary>
         private static Dictionary<string, int> DetermineMaxColWidth(IEntityType? entityType, IEnumerable dbSet, List<string> navigationProperties)
         {
             // Dictionary to hold the maximum length of values for each property
@@ -387,6 +395,9 @@ namespace CourseProject_CommandLineDBManagementSystem
 
         /// <summary>
         /// Referenced from: https://stackoverflow.com/questions/3967140/duplicate-key-exception-from-entity-framework
+        /// 
+        /// This function checks if a DbUpdateException thrown by Entity Framework is due to a SQL unique constraint violation, 
+        /// specifically identifying exceptions related to duplicate key errors by examining SQL error numbers 2627 and 2601.
         /// </summary>
         private static bool IsDuplicateKeyException(DbUpdateException exception)
         {
