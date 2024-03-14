@@ -9,6 +9,7 @@ namespace MenuClasses
     public interface IMenuItem
     {
         string SelectionText { get; init; }
+        Menu MenuInstance { get; init; }
         public void PerformMenuAction();
     }
 }

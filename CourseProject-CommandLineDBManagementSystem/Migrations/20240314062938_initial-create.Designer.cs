@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CourseProject_CommandLineDBManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    [Migration("20240311161239_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240314062938_initial-create")]
+    partial class initialcreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,8 +39,9 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                     b.Property<int>("PlayerId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("datetime2");
+                    b.Property<decimal>("Time")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.HasKey("Id");
 
@@ -267,13 +268,21 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.TeamStadium", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<int>("StadiumId")
                         .HasColumnType("int");
 
                     b.Property<int>("TeamId")
                         .HasColumnType("int");
 
-                    b.HasKey("StadiumId", "TeamId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("StadiumId");
 
                     b.HasIndex("TeamId")
                         .IsUnique();

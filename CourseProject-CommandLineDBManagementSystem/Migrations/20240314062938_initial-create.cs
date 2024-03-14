@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CourseProject_CommandLineDBManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initialcreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -182,12 +182,14 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                 name: "TeamStadiums",
                 columns: table => new
                 {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     TeamId = table.Column<int>(type: "int", nullable: false),
                     StadiumId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TeamStadiums", x => new { x.StadiumId, x.TeamId });
+                    table.PrimaryKey("PK_TeamStadiums", x => x.Id);
                     table.ForeignKey(
                         name: "FK_TeamStadiums_Stadiums_StadiumId",
                         column: x => x.StadiumId,
@@ -208,7 +210,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Time = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Time = table.Column<decimal>(type: "decimal(5,2)", precision: 5, scale: 2, nullable: false),
                     PlayerId = table.Column<int>(type: "int", nullable: false),
                     MatchId = table.Column<int>(type: "int", nullable: false)
                 },
@@ -274,6 +276,11 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                 name: "IX_Players_TeamId",
                 table: "Players",
                 column: "TeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeamStadiums_StadiumId",
+                table: "TeamStadiums",
+                column: "StadiumId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TeamStadiums_TeamId",

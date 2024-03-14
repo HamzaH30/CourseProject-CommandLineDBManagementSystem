@@ -11,29 +11,20 @@ namespace CourseProject_CommandLineDBManagementSystem.MenuOptions
     {
         public string SelectionText { get; init; }
         public Menu MenuInstance { get; init; }
-        private bool _continueToCreateEntryMenu;
-        private List<string> _tableNames;
+        public bool ContinueToCreateEntryMenu { get; private set; }
 
 
-        public CreateEntry(Menu menuInstance, List<string> tableNames)
+        public CreateEntry(Menu menuInstance)
         {
             SelectionText = "Create a new entry for a table";
-            _continueToCreateEntryMenu = false;
+            ContinueToCreateEntryMenu = false;
             MenuInstance = menuInstance;
-            _tableNames = tableNames;
         }
 
         public void PerformMenuAction()
         {
+            ContinueToCreateEntryMenu = true;
             MenuInstance.ExitMenu();
-            CreateEntryMenu();
-        }
-
-        private void CreateEntryMenu()
-        {
-            Menu chooseTableMenu = new Menu("Create", "Choose a table");
-            _tableNames.ForEach(name => chooseTableMenu.AddToMenu(new DBTableOption(name)));
-            chooseTableMenu.Display();
         }
     }
 }

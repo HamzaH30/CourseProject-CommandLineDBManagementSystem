@@ -33,6 +33,12 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
             base.OnModelCreating(modelBuilder);
 
             DefineKeys(modelBuilder);
+
+            // Explicitly define the precision and scale for the decimal property in the Goal entity
+            modelBuilder.Entity<Goal>()
+                .Property(goal => goal.Time)
+                .HasPrecision(5, 2);
+
             DefineRelationships(modelBuilder);
         }
 

@@ -9,18 +9,18 @@ namespace MenuClasses
     public class Exit : IMenuItem
     {
         public string SelectionText { get; init; }
-        Menu MenuToReferTo { get; init; }
+        public Menu MenuInstance { get; init; }
 
         public Exit(string selectionText, Menu menuToReferTo)
         {
             SelectionText = selectionText;
-            MenuToReferTo = menuToReferTo;
+            MenuInstance = menuToReferTo;
         }
 
         public void PerformMenuAction()
         {
             Console.WriteLine("Exiting...");
-            MenuToReferTo.ExitMenu();
+            MenuInstance.ExitMenu();
         }
     }
 
