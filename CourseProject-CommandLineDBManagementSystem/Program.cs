@@ -4,8 +4,10 @@ using MenuClasses;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Collections;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Text;
 
 namespace CourseProject_CommandLineDBManagementSystem
 {
@@ -19,13 +21,22 @@ namespace CourseProject_CommandLineDBManagementSystem
             while (continueRunning)
             {
                 Menu startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
+                
                 CreateEntry createEntry = new CreateEntry(startingMenu);
+                ReadOption readOption = new ReadOption(startingMenu);
+                
                 startingMenu.AddToMenu(createEntry);
+                startingMenu.AddToMenu(readOption);
+
                 startingMenu.Display();
 
                 if (createEntry.ContinueToCreateEntryMenu)
                 {
                     CreateOperation<ApplicationDBContext>();
+                }
+                else if (readOption.ContinueToReadMenu)
+                {
+                    ReadOperation<ApplicationDBContext>();
                 }
 
                 // Check if user requested to exit through the menu
@@ -48,6 +59,46 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
         }
 
+        /// <summary>
+        /// Simple method to convert PascalCase strings to a more readable format
+        /// </summary>
+        private static string ToReadableName(string pascalCaseString)
+        {
+            if (string.IsNullOrEmpty(pascalCaseString))
+            {
+                return pascalCaseString;
+            }
+
+            StringBuilder readableName = new StringBuilder();
+            readableName.Append(pascalCaseString[0]);
+
+            for (int i = 1; i < pascalCaseString.Length; i++)
+            {
+                if (char.IsUpper(pascalCaseString[i]))
+                {
+                    readableName.Append(' ');
+                }
+                readableName.Append(pascalCaseString[i]);
+            }
+
+            return readableName.ToString();
+        }
+
+
+        private static void ReadOperation<TContext>() where TContext : ApplicationDBContext, new()
+        {
+            using TContext dbContext = new TContext();
+
+            var entityNames = dbContext.Model.GetEntityTypes()
+                .Select(entityType => entityType.ClrType.Name) // Get the name of the class type (ClrType) that EF core is using to map each entity to its corresponding table.
+                .Distinct()
+                .ToList();
+
+            Menu chooseTableMenu = new Menu("Read", "Choose a table");
+            entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, ReadTableEntry)));
+            chooseTableMenu.Display();
+        }
+
         private static void CreateOperation<TContext>() where TContext : ApplicationDBContext, new()
         {
             using TContext dbContext = new TContext();
@@ -58,7 +109,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .ToList();
 
             Menu chooseTableMenu = new Menu("Create", "Choose a table");
-            entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(entityName, chooseTableMenu, CreateTableEntry)));
+            entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, CreateTableEntry)));
             chooseTableMenu.Display();
         }
 
@@ -108,7 +159,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                     else 
                     {
                         // Prompt user
-                        Console.Write($"Enter value for {prop.Name} ({prop.PropertyType.Name}): ");
+                        Console.Write($"Enter a value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}): ");
                         string input = Console.ReadLine();
 
                         // Convert the user's input into the correct datatype for this property
@@ -144,6 +195,64 @@ namespace CourseProject_CommandLineDBManagementSystem
             {
                 // Handle other exceptions
                 Console.WriteLine("An unexpected error occurred.");
+            }
+        }
+
+        public static void ReadTableEntry(string entityName)
+        {
+            using var dbContext = new ApplicationDBContext();
+
+            /*
+             * Find the entity type that corresponds to the provided table name. Referenced from: https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
+             * (Entity types are classes mapped to the database tables)
+             */
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
+
+            // If the entity type isn't found, it prints an error message and returns early.
+            if (entityType == null)
+            {
+                Console.WriteLine("Entity type / table not found");
+                return;
+            }
+
+            /*
+             * Find the DbSet property (DbSet<entityType>) within the DbContext that corresponds to the entity name.
+             * 
+             * Referenced from https://dev.to/nakullukan/how-to-crud-dynamically-in-entity-framework-3fi3
+             */
+            var dbSetProperty = dbContext.GetType().GetProperty(entityName + "s"); // The DbSet is named as plural of entity, e.g., "Teams" for "Team" entity
+
+            // If the DbSet property isn't found, it prints an error message and returns early.
+            if (dbSetProperty == null)
+            {
+                Console.WriteLine($"DbSet<{entityName}> not found.");
+                return;
+            }
+
+            // Retrieves the value of the DbSet property, which is an IQueryable representing the collection of entities in the database.
+            IEnumerable dbSet = (IEnumerable)dbSetProperty.GetValue(dbContext);
+
+            // Retrieve a list of navigation property names to filter them out later
+            List<string> navigationProperties = entityType.GetNavigations().Select(navigation => navigation.Name).ToList();
+
+            Console.WriteLine($"\n\rEntries in {ToReadableName(entityName)}: ");
+
+            // Iterates over each entity in the DbSet property
+            foreach (var entity in dbSet)
+            {
+                // Retrieves the properties of the current entity (the properties in the corresponding class, e.g. Team or Stadium)
+                PropertyInfo[] entityProperties = entity.GetType().GetProperties();
+
+                foreach (var prop in entityProperties)
+                {
+                    // Skip navigation properties
+                    if (!navigationProperties.Contains(prop.Name))
+                    {
+                        var propValue = prop.GetValue(entity);
+                        Console.WriteLine($"{ToReadableName(prop.Name)}: {propValue}");
+                    }
+                }
+                Console.WriteLine("-----------");
             }
         }
 
