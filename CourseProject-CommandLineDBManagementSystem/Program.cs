@@ -2,6 +2,42 @@
  * Name: Hamza Haque
  * Course: Advanced Database and ORM Concepts
  * Assignment: Advanced Database Course Project: Command Line Database Management System
+ * 
+ * ---------
+ * As an additional component for this project, I have created an ER Diagram to help you in better understanding the schema.
+ * Link: https://lucid.app/lucidchart/b9784be2-f370-48be-acdc-a42cb988b98d/edit?viewport_loc=-574%2C384%2C2548%2C1248%2C0_0&invitationId=inv_48f6ce5f-c8ec-4ec5-8916-d2a1911190d2
+ * 
+ * The database system is designed for a soccer league, focusing on clear organization, data integrity, and real-world representation. 
+ * Key features include:
+ *  (1) Structured Data: Separate tables for teams, players, matches, etc., ensuring organized and manageable data.
+ *  (2) Integrity and Relationships: Uses primary and foreign keys to establish connections between entities, such as teams and players, maintaining data consistency.
+ *  (3) Data Types and Precision: Selects appropriate data types for accuracy and efficiency, like match times & dates, as well as goal timings within a match.
+ *  (4) Efficient Data Management: Using cascading deletes and other actions to smartly handle data dependencies.
+ *  (5) Extensibility: Covers a wide range of functionalities, from individual player achievements to complex team-stadium relations.
+ *  (6) Complex Relationships: Effectively models scenarios like home and away matches.
+ *  
+ * In essence, the system efficiently manages soccer league data, enabling complex operations while ensuring data integrity and providing flexibility for future expansion.
+ * 
+ * This project is structured around the execution of Program.cs, serving as the entry point. 
+ * Upon running, you are presented with four main navigation options that facilitate Create, Read, Update, and Delete (CRUD) operations, 
+ * integral to interacting with the database. Initially, the database is empty, lacking pre-populated data. 
+ * To assist in visualizing and testing the system's functionality, I can provide SQL queries to seed the database with sample data upon request.
+ * 
+ * A notable enhancement in user experience is the implementation of data presentation in a tabular format, 
+ * which significantly improves readability and data comprehension. 
+ * This formatting choice ensures that data output is both structured and accessible.
+ * 
+ * The architecture of the project showcases a careful separation of concerns and adherence to coding standards. 
+ * Common functionalities are abstracted and reused across different parts of the application, promoting code maintainability and reducing redundancy.
+ * 
+ * Despite the temptation to centralize certain operations (the starting "operation" methods for the CRUD operations) for convenience, 
+ * a deliberate decision was made to separate specific functionalities. 
+ * This approach was chosen to avoid the disadvantages of tightly coupled code, particularly concerning the management and 
+ * lifecycle of the ApplicationDBContext instance. 
+ * 
+ * By refraining from passing this instance across different parts of the application, 
+ * the design enhances modularity and follows best practices in software development, 
+ * ensuring that each component remains responsible for its distinct set of functionalities.
  */
 
 using CourseProject_CommandLineDBManagementSystem.Data;
@@ -22,13 +58,6 @@ namespace CourseProject_CommandLineDBManagementSystem
 {
     internal class Program
     {
-        /*
-         * TODO:
-         * - Create a separate file that creates some temporary starting data, instead of having to manually create data
-         * - Finish the Update & Delete operations
-         * - Complete README + documentation
-         */
-
         static void Main(string[] args)
         {
             using ApplicationDBContext dbContext = new ApplicationDBContext();
@@ -118,7 +147,6 @@ namespace CourseProject_CommandLineDBManagementSystem
                 return AskToContinue();
             }
         }
-
 
         /// <summary>
         /// Simple method to convert PascalCase strings to a more readable format

@@ -89,8 +89,6 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
             // Match (many) -> Stadium (one)
             /*
              * The Database logic: If stadium is deleted, then the match is deleted
-             * 
-             * ***TODO***: The Business Logic: The stadium cannot be deleted, but instead, a property (i.e., "demolished" or "active") should be set to true
              */
             modelBuilder.Entity<Match>()
                 .HasOne(match => match.Stadium)
