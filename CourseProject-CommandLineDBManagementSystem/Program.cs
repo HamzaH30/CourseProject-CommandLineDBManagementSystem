@@ -9,6 +9,7 @@ using CourseProject_CommandLineDBManagementSystem.MenuOptions;
 using MenuClasses;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Collections;
@@ -26,7 +27,6 @@ namespace CourseProject_CommandLineDBManagementSystem
          * - Create a separate file that creates some temporary starting data, instead of having to manually create data
          * - Finish the Update & Delete operations
          * - Complete README + documentation
-         * - get Alex and/or Pouya to look over, if possible
          */
 
         static void Main(string[] args)
@@ -36,9 +36,9 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             while (continueRunning)
             {
-                InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption);
+                InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption);
                 startingMenu.Display();
-                HandleStartingMenuOptions(createEntry, readOption);
+                HandleStartingMenuOptions(createEntry, readOption, updateOption);
 
                 // Check if user requested to exit through the menu
                 if (startingMenu.UserRequestedExit)
@@ -52,7 +52,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
         }
 
-        private static void HandleStartingMenuOptions(CreateEntry createEntry, ReadOption readOption)
+        private static void HandleStartingMenuOptions(CreateEntry createEntry, ReadOption readOption, UpdateOption updateOption)
         {
             if (createEntry.ContinueToCreateEntryMenu)
             {
@@ -62,15 +62,23 @@ namespace CourseProject_CommandLineDBManagementSystem
             {
                 ReadOperation<ApplicationDBContext>();
             }
+            else if (updateOption.ContinueToUpdateMenu)
+            {
+                 UpdateOperation<ApplicationDBContext>();
+            }
         }
 
-        private static void InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption)
+        private static void InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption)
         {
             startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
+
             createEntry = new CreateEntry(startingMenu);
             readOption = new ReadOption(startingMenu);
+            updateOption = new UpdateOption(startingMenu);
+
             startingMenu.AddToMenu(createEntry);
             startingMenu.AddToMenu(readOption);
+            startingMenu.AddToMenu(updateOption);
         }
 
         private static bool AskToContinue()
@@ -78,6 +86,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             // Ask the user if they want to perform another operation, as before
             Console.Write("Do you want to perform another operation? (y/n): ");
             var userDecision = Console.ReadLine()?.ToLower();
+            Console.WriteLine();
             return userDecision == "y";
         }
 
@@ -131,6 +140,38 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             Menu chooseTableMenu = new Menu("Create", "Choose a table");
             entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, CreateTableEntry)));
+            chooseTableMenu.Display();
+        }
+
+        private static void UpdateOperation<TContext>() where TContext : ApplicationDBContext, new()
+        {
+            using TContext dbContext = new TContext();
+
+            Menu chooseTableMenu = new Menu("Update", "Choose a table");
+
+            /*
+             * Filter out all properties of the dbContext object that are generic types and specifically are of the type DbSet<>, 
+             * regardless of what type DbSet<> is holding.
+             */
+            var allDbSetProps = dbContext.GetType().GetProperties()
+                .Where(
+                    prop => prop.PropertyType.IsGenericType &&
+                    prop.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)
+                ); 
+
+            foreach (var dbSetPropInfo in allDbSetProps)
+            {
+                // Retrieve the value of the DbSet property, which is an IQueryable representing the collection of entries in this table (DbSet<entityType> collection is the code representation of this table).
+                IEnumerable entities = (IEnumerable)dbSetPropInfo.GetValue(dbContext);
+
+                // Get the names of tables that have at least one data entry by checking if there are any elements in the entities collection
+                if (entities.Cast<object>().Any())
+                {
+                    // Only create a menu item for those tables that have at least one data entry
+                    chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(dbSetPropInfo.Name), chooseTableMenu, UpdateTableEntry));
+                }
+            }
+            
             chooseTableMenu.Display();
         }
 
@@ -217,6 +258,11 @@ namespace CourseProject_CommandLineDBManagementSystem
                 // Handle other exceptions
                 Console.WriteLine("An unexpected error occurred.");
             }
+        }
+
+        public static void UpdateTableEntry(string entityName)
+        {
+            Console.WriteLine(entityName + " is to be updated...");
         }
 
         /// <summary>
@@ -472,5 +518,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .ToList()
                 .Contains(prop.Name);
         }
+    
+        
     }
 }
