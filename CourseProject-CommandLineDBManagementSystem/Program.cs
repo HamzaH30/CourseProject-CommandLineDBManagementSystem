@@ -36,18 +36,26 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             while (continueRunning)
             {
-                InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption);
-                startingMenu.Display();
-                HandleStartingMenuOptions(createEntry, readOption, updateOption);
+                // Final try-catch. Meant to catch any specific errors that have not been handled in any of the numerous methods.
+                try
+                {
+                    InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption);
+                    startingMenu.Display();
+                    HandleStartingMenuOptions(createEntry, readOption, updateOption);
 
-                // Check if user requested to exit through the menu
-                if (startingMenu.UserRequestedExit)
-                {
-                    continueRunning = false;
+                    // Check if user requested to exit through the menu
+                    if (startingMenu.UserRequestedExit)
+                    {
+                        continueRunning = false;
+                    }
+                    else
+                    {
+                        continueRunning = AskToContinue();
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    continueRunning = AskToContinue();
+                    Console.WriteLine($"An error occured. Please try again.\r\nError: {ex.Message}\r\n");
                 }
             }
         }
@@ -83,12 +91,28 @@ namespace CourseProject_CommandLineDBManagementSystem
 
         private static bool AskToContinue()
         {
-            // Ask the user if they want to perform another operation, as before
             Console.Write("Do you want to perform another operation? (y/n): ");
-            var userDecision = Console.ReadLine()?.ToLower();
-            Console.WriteLine();
-            return userDecision == "y";
+            var userDecision = Console.ReadLine()?.Trim().ToLower();
+
+            if (userDecision == "y")
+            {
+                Console.WriteLine();
+                return true;
+            }
+            else if (userDecision == "n")
+            {
+                Console.WriteLine();
+                return false;
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter 'y' for yes or 'n' for no.");
+
+                // Recursively call until valid input is received
+                return AskToContinue(); 
+            }
         }
+
 
         /// <summary>
         /// Simple method to convert PascalCase strings to a more readable format
@@ -124,7 +148,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .Distinct()
                 .ToList();
 
-            Menu chooseTableMenu = new Menu("Read", "Choose a table");
+            Menu chooseTableMenu = new Menu("==Read==", "Choose a table");
             entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, ReadTableEntry)));
             chooseTableMenu.Display();
         }
@@ -138,16 +162,23 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .Distinct()
                 .ToList();
 
-            Menu chooseTableMenu = new Menu("Create", "Choose a table");
+            Menu chooseTableMenu = new Menu("==Create==", "Choose a table");
             entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, CreateTableEntry)));
             chooseTableMenu.Display();
         }
 
+        /// <summary>
+        /// Displays a menu to update an entry in any table that contains at least one entry. 
+        /// It dynamically generates a list of tables (DbSets) that have entries and allows the user to choose one for updating.
+        /// Upon choosing a table, it further navigates to updating a specific entry within that table.
+        /// 
+        /// This method ensures that the user can only attempt to update tables that are not empty.
+        /// </summary>
         private static void UpdateOperation<TContext>() where TContext : ApplicationDBContext, new()
         {
             using TContext dbContext = new TContext();
 
-            Menu chooseTableMenu = new Menu("Update", "Choose a table");
+            Menu chooseTableMenu = new Menu("==Update==", "Choose a table");
 
             /*
              * Filter out all properties of the dbContext object that are generic types and specifically are of the type DbSet<>, 
@@ -168,7 +199,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 if (entities.Cast<object>().Any())
                 {
                     // Only create a menu item for those tables that have at least one data entry
-                    chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(dbSetPropInfo.Name), chooseTableMenu, UpdateTableEntry));
+                    chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(dbSetPropInfo.Name.TrimEnd('s')), chooseTableMenu, UpdateTableEntry));
                 }
             }
             
@@ -193,7 +224,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             using var dbContext = new ApplicationDBContext();
 
             // Find the entity type by matching the name of each entityType with the name of the table the user selected : https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
-            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => ToReadableName(entityType.ClrType.Name) == entityName);
 
             if (entityType == null)
             {
@@ -262,7 +293,101 @@ namespace CourseProject_CommandLineDBManagementSystem
 
         public static void UpdateTableEntry(string entityName)
         {
-            Console.WriteLine(entityName + " is to be updated...");
+            using var dbContext = new ApplicationDBContext();
+
+            // Find the entity type by matching the name of each entityType with the name of the table the user selected : https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => ToReadableName(entityType.ClrType.Name) == entityName);
+
+            if (entityType == null)
+            {
+                Console.WriteLine("Entity type / table not found");
+                return;
+            }
+
+            // Get the primary key property (the schema shows that there are no composite keys, they are all surrogate keys)
+            var primaryKeyProp = entityType.FindPrimaryKey()?.Properties.FirstOrDefault()?.PropertyInfo;
+
+            // Error-handling
+            if (primaryKeyProp == null)
+            {
+                Console.WriteLine($"No primary key found for {entityName}.");
+                return;
+            }
+
+            // Find which entry the user wants to edit
+            Console.WriteLine($"Updating an entry in {ToReadableName(entityName)}:");
+            Console.Write($"Enter the {ToReadableName(primaryKeyProp.Name)} of the entry you wish to edit: ");
+            string keyValue = Console.ReadLine();
+
+            /*
+             * All the primary keys are integers according to the DB Schema. 
+             * In the future, to expand, if there is a primary key of another datatype, then we could use Convert.ChangeType()
+             */
+            int primaryKey = int.Parse(keyValue);
+
+            var dataEntityToUpdate = dbContext.Find(entityType.ClrType, primaryKey);
+            
+            // Error-handling
+            if (dataEntityToUpdate == null)
+            {
+                Console.WriteLine("Entry not found!");
+                return;
+            }
+
+            // Get the properties of this data entry in the table (entity) that the user can edit
+            var editableProps = entityType.ClrType.GetProperties()
+                .Where(p => p.Name != primaryKeyProp.Name && CanUserEditThisProperty(entityType, p)) // Explicitly making sure that the primary key property is not editable by the user
+                .ToList();
+
+            if (editableProps.Count == 0)
+            {
+                Console.WriteLine("There are no editable properties for this entry.");
+                return;
+            }
+
+            Menu choosePropertyMenu = new Menu("Update", "Choose a property to update:");
+            
+            foreach (var prop in editableProps)
+            {
+                // Pass the callback function in.
+                choosePropertyMenu.AddToMenu(new EditablePropertyOption(choosePropertyMenu, ToReadableName(prop.Name), () =>
+                {
+                    /*
+                     * This lambda expression is "capturing" / storing the "prop" reference for each EditablePropertyOption instance.
+                     * Therefore, the callback function doesn't need to accept any parameters due to the way lambda expressions work.
+                     */
+
+                    // Specific method of updating the time of goal property
+                    if (entityName == "Goal" && prop.Name == "Time")
+                    {
+                        TimeSpan timeOfGoal = PromptUserForGoalTime();
+                        decimal totalMinutes = (decimal)timeOfGoal.TotalMinutes;
+                        prop.SetValue(dataEntityToUpdate, totalMinutes);
+                    }
+                    else
+                    {
+                        // For all other properties, prompt the user to give a new value
+                        Console.Write($"Enter a new value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}) [Current value: {prop.GetValue(dataEntityToUpdate)}]: ");
+                        string input = Console.ReadLine();
+                        var value = Convert.ChangeType(input, prop.PropertyType);
+                        prop.SetValue(dataEntityToUpdate, value);
+                    }
+
+                    // Error-handling
+                    try
+                    {
+                        dbContext.Update(dataEntityToUpdate);
+                        dbContext.SaveChanges();
+                        Console.WriteLine("The record has been updated successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"An error occurred while updating the record: {ex.Message}");
+                    }
+                }));
+            }
+
+            choosePropertyMenu.Display();
         }
 
         /// <summary>
@@ -284,7 +409,7 @@ namespace CourseProject_CommandLineDBManagementSystem
              * Step 1: Find the corresponding entity type for the given name. Referenced from: https://learn.microsoft.com/en-us/ef/core/modeling/entity-types?tabs=fluent-api
              * (Entity types are classes mapped to the database tables)
              */
-            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => entityType.ClrType.Name == entityName);
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => ToReadableName(entityType.ClrType.Name) == entityName);
 
             // If the entity type isn't found, it prints an error message and returns early.
             if (entityType == null)
@@ -298,7 +423,9 @@ namespace CourseProject_CommandLineDBManagementSystem
              * 
              * Referenced from https://dev.to/nakullukan/how-to-crud-dynamically-in-entity-framework-3fi3
              */
-            var dbSetProperty = dbContext.GetType().GetProperty(entityName + "s"); // The DbSet is named as plural of entity, e.g., "Teams" for "Team" entity
+            // Ensure entityName is one word by removing spaces
+            string dbSetName = entityName.Replace(" ", "") + "s";
+            var dbSetProperty = dbContext.GetType().GetProperty(dbSetName); // The DbSet is named as plural of entity, e.g., "Teams" for "Team" entity
 
             // If the DbSet property isn't found, it prints an error message and returns early.
             if (dbSetProperty == null)
@@ -461,7 +588,7 @@ namespace CourseProject_CommandLineDBManagementSystem
         }
 
         /// <summary>
-        /// This is a specific method for when the user wants to write an entry into the Goal table.
+        /// This is a specific method for when the user wants to write an entry or update an entry into the Goal table.
         /// It prompts the user specific information regarding the time of the goal.
         /// </summary>
         private static TimeSpan PromptUserForGoalTime()

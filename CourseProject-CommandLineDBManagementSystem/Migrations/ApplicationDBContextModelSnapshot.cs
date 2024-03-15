@@ -46,7 +46,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("Goals");
+                    b.ToTable("Goals", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.League", b =>
@@ -63,7 +63,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Leagues");
+                    b.ToTable("Leagues", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.LeagueTeam", b =>
@@ -89,7 +89,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("LeagueTeams");
+                    b.ToTable("LeagueTeams", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Manager", b =>
@@ -123,7 +123,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                     b.HasIndex("TeamId")
                         .IsUnique();
 
-                    b.ToTable("Managers");
+                    b.ToTable("Managers", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Match", b =>
@@ -163,7 +163,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasIndex("StadiumId");
 
-                    b.ToTable("Matches");
+                    b.ToTable("Matches", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Player", b =>
@@ -204,7 +204,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("Players");
+                    b.ToTable("Players", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Position", b =>
@@ -223,7 +223,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasAlternateKey("Name");
 
-                    b.ToTable("Positions");
+                    b.ToTable("Positions", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Stadium", b =>
@@ -251,7 +251,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Stadiums");
+                    b.ToTable("Stadiums", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Team", b =>
@@ -268,7 +268,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Teams");
+                    b.ToTable("Teams", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.TeamStadium", b =>
@@ -292,7 +292,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Migrations
                     b.HasIndex("TeamId")
                         .IsUnique();
 
-                    b.ToTable("TeamStadiums");
+                    b.ToTable("TeamStadiums", (string)null);
                 });
 
             modelBuilder.Entity("CourseProject_CommandLineDBManagementSystem.Models.Goal", b =>
