@@ -152,7 +152,7 @@ namespace CourseProject_CommandLineDBManagementSystem.Data
 
             // Primary Key: LeagueTeam
             modelBuilder.Entity<LeagueTeam>()
-                .HasKey(leagueTeam => new { leagueTeam.LeagueId, leagueTeam.TeamId });
+                .HasKey(leagueTeam => leagueTeam.Id);
 
             // Primary Key: Manager
             modelBuilder.Entity<Manager>()
