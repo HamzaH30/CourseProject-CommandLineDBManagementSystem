@@ -39,9 +39,9 @@ namespace CourseProject_CommandLineDBManagementSystem
                 // Final try-catch. Meant to catch any specific errors that have not been handled in any of the numerous methods.
                 try
                 {
-                    InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption);
+                    InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption, out DeleteEntry deleteEntry);
                     startingMenu.Display();
-                    HandleStartingMenuOptions(createEntry, readOption, updateOption);
+                    HandleStartingMenuOptions(createEntry, readOption, updateOption, deleteEntry);
 
                     // Check if user requested to exit through the menu
                     if (startingMenu.UserRequestedExit)
@@ -60,7 +60,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
         }
 
-        private static void HandleStartingMenuOptions(CreateEntry createEntry, ReadOption readOption, UpdateOption updateOption)
+        private static void HandleStartingMenuOptions(CreateEntry createEntry, ReadOption readOption, UpdateOption updateOption, DeleteEntry deleteEntry)
         {
             if (createEntry.ContinueToCreateEntryMenu)
             {
@@ -74,24 +74,30 @@ namespace CourseProject_CommandLineDBManagementSystem
             {
                 UpdateOperation<ApplicationDBContext>();
             }
+            else if (deleteEntry.ContinueToDeleteMenu)
+            {
+                DeleteOperation<ApplicationDBContext>();
+            }
         }
 
-        private static void InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption)
+        private static void InitializeStartingMenu(out Menu startingMenu, out CreateEntry createEntry, out ReadOption readOption, out UpdateOption updateOption, out DeleteEntry deleteEntry)
         {
             startingMenu = new Menu("Welcome to the Console-Based DBMS", "Choose one of the following options:");
 
             createEntry = new CreateEntry(startingMenu);
             readOption = new ReadOption(startingMenu);
             updateOption = new UpdateOption(startingMenu);
+            deleteEntry = new DeleteEntry(startingMenu);
 
             startingMenu.AddToMenu(createEntry);
             startingMenu.AddToMenu(readOption);
             startingMenu.AddToMenu(updateOption);
+            startingMenu.AddToMenu(deleteEntry);
         }
 
         private static bool AskToContinue()
         {
-            Console.Write("Do you want to perform another operation? (y/n): ");
+            Console.Write("> Do you want to perform another operation? (y/n): ");
             var userDecision = Console.ReadLine()?.Trim().ToLower();
 
             if (userDecision == "y")
@@ -206,6 +212,23 @@ namespace CourseProject_CommandLineDBManagementSystem
             chooseTableMenu.Display();
         }
 
+        private static void DeleteOperation<TContext>() where TContext : ApplicationDBContext, new()
+        {
+            using TContext dbContext = new TContext();
+
+            // First ask the user what table they want to select
+            var entityNames = dbContext.Model.GetEntityTypes()
+                .Select(entityType => entityType.ClrType.Name) // Get the name of the class type (ClrType) that EF core is using to map each entity to its corresponding table.
+                .Distinct()
+                .ToList();
+
+            Menu chooseTableMenu = new Menu("==Delete Entry==", "Choose a table");
+            entityNames.ForEach(entityName => chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(entityName), chooseTableMenu, DeleteTableEntry)));
+            chooseTableMenu.Display();
+        }
+
+
+
         /// <summary>
         /// This function is used as a callback function.
         /// 
@@ -252,7 +275,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                     else
                     {
                         // Prompt user
-                        Console.Write($"Enter a value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}): ");
+                        Console.Write($"> Enter a value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}): ");
                         string input = Console.ReadLine();
 
                         // Convert the user's input into the correct datatype for this property
@@ -321,7 +344,7 @@ namespace CourseProject_CommandLineDBManagementSystem
 
             // Find which entry the user wants to edit
             Console.WriteLine($"Updating an entry in {ToReadableName(entityName)}:");
-            Console.Write($"Enter the {ToReadableName(primaryKeyProp.Name)} of the entry you wish to edit: ");
+            Console.Write($"> Enter the {ToReadableName(primaryKeyProp.Name)} of the entry you wish to edit: ");
             string keyValue = Console.ReadLine();
 
             /*
@@ -373,7 +396,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                     else
                     {
                         // For all other properties, prompt the user to give a new value
-                        Console.Write($"Enter a new value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}) [Current value: {prop.GetValue(dataEntityToUpdate)}]: ");
+                        Console.Write($"> Enter a new value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}) [Current value: {prop.GetValue(dataEntityToUpdate)}]: ");
                         string input = Console.ReadLine();
                         var value = Convert.ChangeType(input, prop.PropertyType);
                         prop.SetValue(dataEntityToUpdate, value);
@@ -447,6 +470,78 @@ namespace CourseProject_CommandLineDBManagementSystem
             // Step 3: Print the entries in a readable format.
             Console.WriteLine($"\n\rEntries in {ToReadableName(entityName)}: ");
             PrintTableEntries(entityType, dbSet);
+        }
+
+        /// <summary>
+        /// This function is used as a callback function.
+        /// 
+        /// Deletes an entry from a specified entity table based on the entity name and a user-specified ID.
+        /// </summary>
+        public static void DeleteTableEntry(string entityName)
+        {
+            using var dbContext = new ApplicationDBContext();
+
+            // Attempt to find the entityType and dbSet using the provided entity name.
+            var entityType = dbContext.Model.GetEntityTypes().FirstOrDefault(entityType => ToReadableName(entityType.ClrType.Name) == entityName);
+
+            if (entityType == null)
+            {
+                Console.WriteLine("Entity type/table not found.");
+                return;
+            }
+
+            string dbSetName = entityName.Replace(" ", "") + "s"; // Entity names are singular and DbSet names are plural.
+
+            // Case the result to IEnumerable. If the casting fails, dbSet will be null
+            IEnumerable? dbSet = dbContext.GetType().GetProperty(dbSetName)?.GetValue(dbContext) as IEnumerable;
+            
+            if (dbSet == null)
+            {
+                Console.WriteLine($"DbSet<{entityName}> not found.");
+                return;
+            }
+
+            // Display the entries to the user.
+            PrintTableEntries(entityType, dbSet);
+
+            // Prompt for the primary key of the entry to delete.
+            var primaryKeyProp = entityType.FindPrimaryKey()?.Properties.FirstOrDefault();
+            
+            if (primaryKeyProp == null)
+            {
+                Console.WriteLine($"No primary key found for {entityName}.");
+                return;
+            }
+
+            Console.Write($"\r\n> Enter the ID of the entry you wish to delete, or enter 0 to cancel: ");
+
+            if (!int.TryParse(Console.ReadLine(), out int primaryKeyValue))
+            {
+                Console.WriteLine("Invalid input. Operation aborted.");
+                return;
+            }
+
+            // Check if user wants to cancel the operation
+            if (primaryKeyValue == 0)
+            {
+                Console.WriteLine("Operation cancelled. Returning to the main menu.");
+                return;
+            }
+
+            // Find the entity by its primary key.
+            var entityToRemove = dbContext.Find(entityType.ClrType, primaryKeyValue);
+            
+            if (entityToRemove == null)
+            {
+                Console.WriteLine("Entry not found!");
+                return;
+            }
+
+            // Remove the entity from the DbSet and save changes.
+            dbContext.Remove(entityToRemove);
+            dbContext.SaveChanges();
+
+            Console.WriteLine("Entry successfully deleted.");
         }
 
         /// <summary>
@@ -606,7 +701,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             bool validMinutes = false;
             while (!validMinutes)
             {
-                Console.Write("What minute was the goal scored in? ");
+                Console.Write("> What minute was the goal scored in? ");
                 validMinutes = int.TryParse(Console.ReadLine(), out minutes);
 
                 if (!validMinutes || minutes < 0)
@@ -620,7 +715,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             bool validSeconds = false;
             while (!validSeconds)
             {
-                Console.Write("What second was the goal scored in? ");
+                Console.Write("> What second was the goal scored in? ");
                 validSeconds = int.TryParse(Console.ReadLine(), out seconds);
 
                 if (!validSeconds || seconds < 0 || seconds >= 60)
@@ -651,7 +746,5 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .ToList()
                 .Contains(prop.Name);
         }
-
-
     }
 }

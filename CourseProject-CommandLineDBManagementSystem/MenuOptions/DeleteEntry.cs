@@ -1,29 +1,29 @@
-﻿using System;
+﻿using MenuClasses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MenuClasses;
 
 namespace CourseProject_CommandLineDBManagementSystem.MenuOptions
 {
-    public class CreateEntry : IMenuItem
+    public class DeleteEntry : IMenuItem
     {
         public string SelectionText { get; init; }
         public Menu MenuInstance { get; init; }
-        public bool ContinueToCreateEntryMenu { get; private set; }
+        public bool ContinueToDeleteMenu { get; private set; }
 
-        public CreateEntry(Menu menuInstance)
+        public DeleteEntry(Menu menuInstance)
         {
-            SelectionText = "Create a new entry for a table";
-            ContinueToCreateEntryMenu = false;
+            SelectionText = "Delete entries from a Table";
             MenuInstance = menuInstance;
+            ContinueToDeleteMenu = false;
         }
 
         public void PerformMenuAction()
         {
-            ContinueToCreateEntryMenu = true;
             MenuInstance.ExitMenu();
+            ContinueToDeleteMenu = true;
         }
     }
 }
