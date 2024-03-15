@@ -72,7 +72,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
             else if (updateOption.ContinueToUpdateMenu)
             {
-                 UpdateOperation<ApplicationDBContext>();
+                UpdateOperation<ApplicationDBContext>();
             }
         }
 
@@ -109,7 +109,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 Console.WriteLine("Invalid input. Please enter 'y' for yes or 'n' for no.");
 
                 // Recursively call until valid input is received
-                return AskToContinue(); 
+                return AskToContinue();
             }
         }
 
@@ -188,7 +188,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .Where(
                     prop => prop.PropertyType.IsGenericType &&
                     prop.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)
-                ); 
+                );
 
             foreach (var dbSetPropInfo in allDbSetProps)
             {
@@ -202,7 +202,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                     chooseTableMenu.AddToMenu(new DBTableOption(ToReadableName(dbSetPropInfo.Name.TrimEnd('s')), chooseTableMenu, UpdateTableEntry));
                 }
             }
-            
+
             chooseTableMenu.Display();
         }
 
@@ -249,7 +249,7 @@ namespace CourseProject_CommandLineDBManagementSystem
 
                         prop.SetValue(entityInstance, totalMinutes);
                     }
-                    else 
+                    else
                     {
                         // Prompt user
                         Console.Write($"Enter a value for {ToReadableName(prop.Name)} ({prop.PropertyType.Name}): ");
@@ -326,7 +326,7 @@ namespace CourseProject_CommandLineDBManagementSystem
             int primaryKey = int.Parse(keyValue);
 
             var dataEntityToUpdate = dbContext.Find(entityType.ClrType, primaryKey);
-            
+
             // Error-handling
             if (dataEntityToUpdate == null)
             {
@@ -345,8 +345,9 @@ namespace CourseProject_CommandLineDBManagementSystem
                 return;
             }
 
+            // Showing the update menu and prompting the user to update the property
             Menu choosePropertyMenu = new Menu("Update", "Choose a property to update:");
-            
+
             foreach (var prop in editableProps)
             {
                 // Pass the callback function in.
@@ -645,7 +646,7 @@ namespace CourseProject_CommandLineDBManagementSystem
                 .ToList()
                 .Contains(prop.Name);
         }
-    
-        
+
+
     }
 }
