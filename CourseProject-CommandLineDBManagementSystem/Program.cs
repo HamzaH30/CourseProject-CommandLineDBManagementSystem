@@ -291,6 +291,11 @@ namespace CourseProject_CommandLineDBManagementSystem
             }
         }
 
+        /// <summary>
+        /// This function updates a specific entry in a given table (entity) within the database by allowing the user to select and modify one of its properties.
+        /// This function dynamically fetches the entity type based on the provided entity name and displays a menu of editable properties to the user.
+        /// The user can then select a property to update, enter a new value for it, and save the changes to the database.
+        /// </summary>
         public static void UpdateTableEntry(string entityName)
         {
             using var dbContext = new ApplicationDBContext();
